@@ -1,0 +1,1 @@
+- S3画像をソースにしてRekognitionのTextDetectionを実施するStepFunctions

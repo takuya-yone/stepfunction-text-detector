@@ -1,0 +1,85 @@
+{
+    "Comment": "This is your state machine",
+    "StartAt": "Get S3 Metadata",
+    "States": {
+      "Get S3 Metadata": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "FunctionName": "arn:aws:lambda:ap-northeast-1:123456789012:function:stepfunctions-gets3object"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Next": "Images Loop",
+        "TimeoutSeconds": 60
+      },
+      "Images Loop": {
+        "Type": "Map",
+        "Iterator": {
+          "StartAt": "Detect Text",
+          "States": {
+            "Detect Text": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "arn:aws:lambda:ap-northeast-1:123456789012:function:stepfunctions-detect-text",
+                "Payload.$": "$"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true,
+              "TimeoutSeconds": 60
+            }
+          }
+        },
+        "Next": "Output Result",
+        "MaxConcurrency": 5,
+        "ItemsPath": "$.imageList"
+      },
+      "Output Result": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "OutputPath": "$.Payload",
+        "Parameters": {
+          "Payload.$": "$",
+          "FunctionName": "arn:aws:lambda:ap-northeast-1:123456789012:function:stepfunctions-output-result"
+        },
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "End": true,
+        "TimeoutSeconds": 60
+      }
+    }
+  }

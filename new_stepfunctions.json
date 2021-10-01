@@ -1,0 +1,39 @@
+{
+    "Comment": "This is your state machine",
+    "StartAt": "ListObjectsV2",
+    "States": {
+      "ListObjectsV2": {
+        "Type": "Task",
+        "Parameters": {
+          "Bucket": "[S3BucketName]",
+          "Prefix": "text_detection/"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:s3:listObjectsV2",
+        "Next": "Map",
+        "OutputPath": "$.Contents[301:]"
+      },
+      "Map": {
+        "Type": "Map",
+        "Iterator": {
+          "StartAt": "DetectText",
+          "States": {
+            "DetectText": {
+              "Type": "Task",
+              "End": true,
+              "Parameters": {
+                "Image": {
+                  "S3Object": {
+                    "Bucket": "[S3BucketName]",
+                    "Name.$": "$.Key"
+                  }
+                }
+              },
+              "Resource": "arn:aws:states:::aws-sdk:rekognition:detectText"
+            }
+          }
+        },
+        "End": true,
+        "MaxConcurrency": 2
+      }
+    }
+  }
